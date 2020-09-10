@@ -1,0 +1,208 @@
+Replica set
+
+tao file app.yaml
+
+Tren vscode, an P de tao Kuber pod
+
+app.yaml
+
+--
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rsapp
+  labels:
+    name: rsapp
+spec:
+  containers:
+  - name: app
+    image: thanhtv1203/swarm:nodejs
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+      - containerPort: 8085
+	  
+---
+
+kubectl apply -f app.yaml
+
+kubectl get all -o wide
+
+#brew install watch
+
+--
+watch -n 1 date
+
+watch -n 1 kubectl get all -o wide
+
+kubectl delete -f app.yaml
+
+
+---
+tao replica set
+
+tao file replicaset.yaml
+an R ( Shift + R), chon Replica Controller
+
+Sua:
+
+(copy noi dung pod vao sau template)
+
+  selector:
+    matchLabels:
+      app: rsapp
+#quan ly cac app co nhan rsapp
+
+
+--- replicaset.yaml
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: rsapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rsapp
+  template:
+    metadata:
+      name: rsapp
+      labels:
+        app: rsapp
+    spec:
+      containers:
+      - name: app
+        image: thanhtv1203/swarm:nodejs
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        ports:
+          - containerPort: 8085
+		  
+----
+
+kubectl apply -f replicaset.yaml
+
+watch -n 1 kubectl get all -o wide
+
+NAME                    DESIRED   CURRENT   READY   AGE    CONTAINERS   IMAGES                     SELECTOR
+replicaset.apps/rsapp   3         3         3       5m9s   app          thanhtv1203/swarm:nodejs   app=rsapp
+
+
+--
+kubectl get rs -o yaml
+
+kubectl describe rs/rsapp
+
+kubectl get rs -o wide
+[root@master ~]# kubectl get rs -o wide
+NAME    DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES                     SELECTOR
+rsapp   3         3         3       10m   app          thanhtv1203/swarm:nodejs   app=rsapp
+
+kubectl get po -l "app=rsapp"
+
+--- thu xoa 1 pod, replicaset lap tuc tao 1 pod moi thay the
+
+kubectl delete pod/rsapp-hlhdh
+
+xoa tat ca pod
+#kubectl delete pod --all
+
+Xoa replicaset, cac pod bi xoa theo
+kubectl delete rs rsapp
+
+---
+
+kubectl label pod/rsapp-cmrl2 rsapp
+
+--
+neu doi label 1 pod, thi no ko thuoc quan ly cua Replicaset nua, se tu tao 1 pod moi 
+
+--
+neu co 1 pod co label giong voi replicaset, thi khi khoi tao replica set chi tao them 2 pod nua
+
+(labels: app=rsapp)
+
+controller by ..
+---
+
+Horizontal Pod Autoscaler (HPA)
+
+kubectl get hpa
+
+https://v1-16.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.16/#horizontalpodautoscaler-v1-autoscaling
+
+--- hpa.yaml
+
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: rsapp-scaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: rsapp
+  minReplicas: 5
+  maxReplicas: 10
+  # Thực hiện scale CPU hoạt động ở 50% so với CPU mà POD yêu cầu
+  targetCPUUtilizationPercentage: 50
+  
+ ----
+kubectl apply -f hpa.yaml
+
+
+kubectl get all -o wide
+
+NAME                                               REFERENCE          TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/rsapp-scaler   ReplicaSet/rsapp   <unknown>/50%   5         10        5          92s
+
+--
+replicaset tu tao them 2 pod de dat pod toi thieu =5
+
+NAME                    DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES                     SELECTOR
+replicaset.apps/rsapp   5         5         5       20m   app          thanhtv1203/swarm:nodejs   app=rsapp
+
+---
+
+kubectl get hpa -o wide
+
+[root@master ~]# kubectl get hpa -o wide
+NAME           REFERENCE          TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+rsapp-scaler   ReplicaSet/rsapp   <unknown>/50%   5         10        5          3m32s
+
+---
+
+cap nhat min 1 max 2, apply lai file yaml
+
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: rsapp-scaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: rsapp
+  minReplicas: 1
+  maxReplicas: 2
+  # Thực hiện scale CPU hoạt động ở 50% so với CPU mà POD yêu cầu
+  targetCPUUtilizationPercentage: 50
+  
+  
+ kubectl apply -f hpa.yaml
+ 
+ -- cac pod se bi xoa di
+ 
+ cap nhat min 3 max 10, apply lai file yaml
+ 
+ --> cac pod dc tao them
+ 
+ ---
+ 
+kubectl describe hpa/rsapp-scaler
+

@@ -1,0 +1,148 @@
+Deployment
+
+https://v1-16.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.16/#deployment-v1-apps
+
+export KUBECONFIG=$HOME/.kube/config
+
+tao file
+myapp-deploy.yaml
+
+an phim Shift + D chon Kuber Deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployapp
+spec:
+  selector:
+    matchLabels:
+      app: deployapp
+  template:
+    metadata:
+      labels:
+        app: deployapp
+    spec:
+      containers:
+      - name: nodejs
+        image: thanhtv1203/swarm:nodejs
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        ports:
+        - containerPort: 8085
+        #cong expose trong image thanhtv1203/swarm:nodejs
+
+--
+
+kubectl apply -f myapp-deploy.yaml
+
+watch -n 1 kubectl get all -o wide
+
+---
+
+them nhan ban:
+
+spec:
+  replicas: 3
+  
+kubectl apply -f myapp-deploy.yaml
+ 
+kubectl get deploy
+ 
+kubectl delete deploy/deployapp
+ 
+--- 1. sua image trong yaml
+
+image: nginx
+
+kubectl apply -f myapp-deploy.yaml
+
+replicaset cua image nodejs cu ve 0 ( xoa di) va tao lai replicaset moi voi image nginx
+
+
+-- 2. dung lenh edit
+
+kubectl edit deploy/deployapp
+
+edit:
+
+image --> httpd
+
+luu lai, deploy dc khoi tao lai ngay
+deploy cu giam ve 0
+
+--
+
+kubectl get deploy -o wide
+
+[root@master ~]# kubectl get deploy -o wide
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES   SELECTOR
+deployapp   3/3     3            3           53m   nodejs       httpd    app=deployapp
+
+--
+
+kubectl get deploy -o yaml
+
+
+kubectl describe deploy/deployapp
+ 
+ 
+ -------------------Rollout
+ 
+ -- kiem tra cac lan cap nhat
+kubectl rollout history deploy/deployapp
+
+[root@master ~]# kubectl rollout history deploy/deployapp
+deployment.apps/deployapp 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+kubectl rollout history deploy/deployapp --revision=2
+
+---
+
+kubectl rollout undo deploy/deployapp --to-revision=1
+
+[root@master ~]# kubectl rollout undo deploy/deployapp --to-revision=1
+deployment.apps/deployapp rolled back
+
+
+watch kubectl get deploy -o wide
+
+kubectl rollout history deploy/deployapp
+kubectl rollout history deploy/deployapp --revision=2
+kubectl rollout history deploy/deployapp --revision=3
+
+---
+
+kubectl delete -f myapp-deploy.yaml
+
+-- sua lai myapp-deploy.yaml
+
+replicas: 2
+
+image: nginx
+
+kubectl apply -f myapp-deploy.yaml
+
+---------- Scale
+
+kubectl scale deploy/deployapp --replicas=10
+
+#tang them pod
+[root@master ~]# kubectl scale deploy/deployapp --replicas=10
+deployment.apps/deployapp scaled
+
+# xoa di pod
+[root@master ~]# kubectl scale deploy/deployapp --replicas=5
+deployment.apps/deployapp scaled
+
+#tu dong tao hpa
+kubectl autoscale deploy/deployapp --min=3 --max=5
+
+[root@master ~]# kubectl autoscale deploy/deployapp --min=3 --max=5
+horizontalpodautoscaler.autoscaling/deployapp autoscaled
+
+kubectl get hpa/deployapp -o yaml > hpa2.yaml

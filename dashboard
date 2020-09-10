@@ -1,0 +1,160 @@
+kubectl get no
+
+kubectl apply -f dashboard-v2-beta6.yaml
+
+kubectl delete -f dashboard-v2-beta6.yaml
+
+kubectl get po -n kubernetes-dashboard
+
+kubectl get pods --all-namespaces
+
+---
+
+#kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml
+
+curl https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml > dashboard-v2.yaml
+
+kubectl apply -f dashboard-v2.yaml
+
+---
+
+mkdir /root/certs  && chmod -R 777 /root/certs
+
+openssl req -nodes -newkey rsa:2048 -keyout /root/certs/dashboard.key -out /root/certs/dashboard.csr -subj "/C=/ST=/L=/O=/OU=/CN=kubernetes-dashboard"
+
+#sinh ra 2 file: dashboard.csr  dashboard.key
+
+cd /root/certs
+
+openssl x509 -req -sha256 -days 365 -in ./dashboard.csr -signkey ./dashboard.key -out ./dashboard.crt
+
+kubectl create secret generic kubernetes-dashboard-certs --from-file=/root/certs -n kubernetes-dashboard
+
+#lay secret tu namespace kubernetes-dashboard
+kubectl get secret -n kubernetes-dashboard
+
+kubectl describe secret kubernetes-dashboard-certs -n kubernetes-dashboard
+
+#kubectl apply -f https://docs.projectcalico.org/v3.10/manifests/calico.yaml
+
+
+#kubectl delete secret kubernetes-dashboard-certs -n kubernetes-dashboard
+
+kubectl describe pod kubernetes-dashboard-7b544877d5-g7xbl -n kubernetes-dashboard
+
+kubectl get no -o wide
+
+kubectl get po -n kubernetes-dashboard
+
+systemctl restart kubelet.service
+
+systemctl status kubelet.service -l
+
+
+ls /sys/fs/cgroup/devices
+
+find / -type f -name "*_systemd_test_default.slice"
+
+
+rpm -Uvh https://download.docker.com/linux/centos/7/x86_64/edge/Packages/containerd.io-1.2.10-3.2.el7.x86_64.rpm
+
+# rpm -qa|grep containerd
+containerd.io-1.2.10-3.2.el7.x86_64
+
+#yum list containerd
+
+
+# docker info|grep -i cgroup
+Cgroup Driver: systemd
+
+yum -y install docker-ce-19
+yum -y install docker-ce-cli-18.09.9-3.el7.x86_64
+
+
+
+----
+yum install -y yum-utils device-mapper-persistent-data lvm2
+
+yum-config-manager --add-repo \
+https://download.docker.com/linux/centos/docker-ce.repo
+
+yum update -y && yum install -y \
+  containerd.io-1.2.13 \
+  docker-ce-19.03.11 \
+  docker-ce-cli-19.03.11
+
+mkdir /etc/docker
+
+cat > /etc/docker/daemon.json <<EOF
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOF
+
+mkdir -p /etc/systemd/system/docker.service.d
+
+systemctl daemon-reload
+systemctl restart docker
+systemctl enable docker
+
+kubeadm init --apiserver-advertise-address=192.168.56.101 --pod-network-cidr=192.168.0.0/16
+
+mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
+
+kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+
+kubectl get pods -n calico-system
+
+
+kubeadm join 192.168.56.101:6443 --token 0osolm.plwz45sdcv7zwhpz \
+    --discovery-token-ca-cert-hash sha256:f91066a0fcd7a72e86871a1c5a9c8525fe5ccc388443dffff8d381268569afd8
+	
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml
+	
+	curl https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml > dashboard-v2.yaml
+
+
+kubectl describe pod kubernetes-dashboard-7b544877d5-85stt -n kubernetes-dashboard
+
+
+dashboard-adminuser.yaml
+
+kubectl apply -f dashboard-adminuser.yaml
+
+kubectl get secret -n kubernetes-dashboard
+
+kubectl describe secret/admin-user-token-v52lb -n kubernetes-dashboard
+
+[root@master ~]# kubectl describe secret/admin-user-token-v52lb -n kubernetes-dashboard
+Name:         admin-user-token-v52lb
+Namespace:    kubernetes-dashboard
+Labels:       <none>
+Annotations:  kubernetes.io/service-account.name: admin-user
+              kubernetes.io/service-account.uid: 5354671a-950a-4d8d-960f-23460c2a9553
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:     1025 bytes
+namespace:  20 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6Ii1oeW0xRkpoVmZaUl81cHE4TlVXd3d5VWQyTENDUm9SdVFEeThwTzFfZ0kifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLXY1MmxiIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiI1MzU0NjcxYS05NTBhLTRkOGQtOTYwZi0yMzQ2MGMyYTk1NTMiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6YWRtaW4tdXNlciJ9.aI3eq7Ug6eAufmGDpMPJTJfHzWt-gnPPrUo-aMaCpBPlo9V2R_5tTnenSXxLexciLRVLnYnoo3QDZra2TgHyD6swj7WwFufyQN3aI7QjIi8L-PUAWwOJlFwvmN3e-0rV-czz8wHUCuT8sOHm5qzbg6agDia9WtvtDBS-agFKmD9OvmGkqLuEbW3vwHPH85mILEJup-lKB7BB9DBnkTiki0nn4yQbeQasCyVaMiv9Ihmec0Co-jlSh68vH0JFURNoKRxj3qESbH7IOLVq393lwa9DdJx-mL_EbjJ2hVYaHmGH5dNjcXyfc2-fnRX9BxdvR_FFEQmI0Jq41Xk6aV0DFg
+
+
+---
+https://192.168.56.102:31001/#/login
+
+
+kubectl proxy
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/

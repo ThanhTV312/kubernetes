@@ -1,0 +1,295 @@
+mkdir /etc/kubelet.d/
+vi static-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: static-pod
+  labels:
+    app: myapp
+    ungdung: ungdung1
+spec:
+  containers:
+    - name: c1
+      image: thanhtv1203/swarm:nodejs
+      resources:
+          limits:
+            memory: "100M"
+            cpu: "100m"
+      ports:
+        - name: web
+          containerPort: 8085
+          protocol: TCP
+		  
+		  
+kubectl apply -f static-pod.yaml
+
+#check on k9s
+export KUBECONFIG=$HOME/.kube/config
+
+kubectl delete -f static-pod.yaml
+
+#on worker
+
+docker login
+thanhtv1203
+
+docker pull thanhtv1203/swarm:nodejs
+
+static-pod       1/1        Running             0      n/a      n/a       n/a       n/a 192.168.41.132        worker1.xtl        GA        4m34s 
+
+
+#pod 2
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginxapp
+  labels:
+    app:nginxapp
+spec:
+  containers:
+  - name:nginx1
+    image: nginx:1.17.6
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+      - containerPort: 80
+	  
+kubectl get pod -A
+
+---
+
+docker build -t thanhtv1203/coretool -f coretool.dockerfile .
+
+docker login
+
+docker push thanhtv1203/coretool
+
+kubectl apply -f coretool.yaml
+
+kubectl get pod -o wide
+
+kubectl delete po nginxapp
+
+kubectl delete -f nginx.yaml
+
+
+
+
+---
+
+4-nginx-swamtest.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-swarmtest
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: n1
+    image: nginx:1.17.6
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+      - containerPort: 80
+  - name: s1
+    image: ichte/swarmtest:node
+    resources:
+     limits:
+       memory: "150Mi"
+       cpu: "100m"
+    ports:
+      - containerPort: 8085
+
+----
+
+kubectl apply -f 4-nginx-swamtest.yaml
+
+kubectl get po/nginx-swarmtest
+
+kubectl get po/nginx-swarmtest -o yaml
+
+kubectl describe po/nginx-swarmtest
+
+----
+
+5-nginx-swamtest-vol.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-swarmtest-vol
+  labels:
+    app: myapp
+spec:
+  volumes:
+    # Định nghĩa một volume - ánh xạ thư mục /home/www máy host
+    - name: "myvol"
+      hostPath:
+          path: "/home/html"
+  containers:
+  - name: n1
+    image: nginx:1.17.6
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+      - containerPort: 80
+    volumeMounts:
+      - mountPath: /usr/share/nginx/html
+        name: "myvol"
+  - name: s1
+    image: thanhtv1203/swarm:nodejs
+    resources:
+     limits:
+       memory: "150Mi"
+       cpu: "100m"
+    ports:
+      - containerPort: 8085
+    volumeMounts:
+      - mountPath: /data/
+        name: "myvol"
+
+kubectl apply -f 5-nginx-swamtest-vol.yaml
+
+
+kubectl get po/nginx-swarmtest-vol -o yaml
+
+
+kubectl exec po/nginx-swarmtest-vol ls / -c s1
+
+kubectl exec po/nginx-swarmtest-vol cat /etc/os-release -c s1
+
+--selfLink
+
+/api/v1/namespaces/default/pods/nginx-swarmtest-vol
+
+
+kubectl proxy
+
+curl http://localhost:8001/api/v1/namespaces/default/pods/nginx-swarmtest-vol/proxy/
+
+[root@master ~]# curl http://localhost:8001/api/v1/namespaces/default/pods/nginx-swarmtest-vol/proxy/
+<html>
+<head><title>403 Forbidden</title></head>
+<body>
+<center><h1>403 Forbidden</h1></center>
+<hr><center>nginx/1.17.6</center>
+</body>
+</html>
+
+
+nginx-swarmtest-vol      2/2       Running           0     n/a      n/a       n/a       n/a 192.168.41.137       worker1.xtl       GA       27m 
+
+[root@master ~]# kubectl get node -o wide
+NAME          STATUS   ROLES    AGE   VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION                CONTAINER-RUNTIME
+master.xtl    Ready    master   12d   v1.18.6   192.168.56.101   <none>        CentOS Linux 7 (Core)   3.10.0-1127.18.2.el7.x86_64   docker://19.3.11
+worker1.xtl   Ready    <none>   12d   v1.18.6   192.168.56.102   <none>        CentOS Linux 7 (Core)   3.10.0-1127.18.2.el7.x86_64   docker://19.3.11
+worker2.xtl   Ready    <none>   12d   v1.18.6   192.168.56.103   <none>        CentOS Linux 7 (Core)   3.10.0-1127.18.2.el7.x86_64   docker://19.3.11
+
+worker1.xtl				192.168.56.102
+
+--- ssh vao may worker1
+ssh root@192.168.56.102
+123456
+
+---
+cd /home/html
+
+vi index.html
+
+<h1> Welcome to nginx</h1>
+
+
+---- Kiem tra tren may Master 
+
+curl http://localhost:8001/api/v1/namespaces/default/pods/nginx-swarmtest-vol/proxy/
+
+[root@master ~]# curl http://localhost:8001/api/v1/namespaces/default/pods/nginx-swarmtest-vol/proxy/
+<h1> Welcome to nginx</h1>
+
+------
+
+An dinh chay tren Pod quy hoach truoc:
+
+them thuoc tinh nodeSelector vao file Yaml:
+
+--kiem tra lable node worker2:
+
+kubectl describe no/worker2.xtl
+
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=worker2.xtl
+                    kubernetes.io/os=linux
+
+--
+kubernetes.io/hostname=worker2.xtl
+
+--->
+
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: worker2.xtl
+
+--
+
+5-nginx-swamtest-vol.yaml
+
+
+kubectl delete -f 5-nginx-swamtest-vol.yaml
+
+kubectl apply -f 5-nginx-swamtest-vol-Chose-node.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-swarmtest-vol
+  labels:
+    app: myapp
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: worker2.xtl
+  volumes:
+    # Định nghĩa một volume - ánh xạ thư mục /home/www máy host
+    - name: "myvol"
+      hostPath:
+          path: "/home/html"
+  containers:
+  - name: n1
+    image: nginx:1.17.6
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+      - containerPort: 80
+    volumeMounts:
+      - mountPath: /usr/share/nginx/html
+        name: "myvol"
+  - name: s1
+    image: thanhtv1203/swarm:nodejs
+    resources:
+     limits:
+       memory: "150Mi"
+       cpu: "100m"
+    ports:
+      - containerPort: 8085
+    volumeMounts:
+      - mountPath: /data/
+        name: "myvol"
+		
+--- xoa tat ca cac pod co file yaml trong thu muc 1.pod
+
+kubectl delete -f ../1.pod
+
+
+

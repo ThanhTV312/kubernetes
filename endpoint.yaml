@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: service1
+subsets:
+  - addresses:
+      - ip: 216.58.220.195      # đây là IP google.com
+    ports:
+      - port: 80

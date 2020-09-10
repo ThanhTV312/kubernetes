@@ -1,0 +1,29 @@
+yum install epel-release -y && yum install snapd -y
+
+systemctl enable --now snapd.socket
+
+ln -s /var/lib/snapd/snap /snap
+
+snap install k9s
+
+snap info k9s
+
+export KUBECONFIG=$HOME/.kube/config
+
+kubectl config get-contexts
+
+https://github.com/derailed/k9s/tree/master/skins/dracula.yml
+
+curl https://github.com/derailed/k9s/tree/master/skins/dracula.yml > dracula.yml
+
+cp dracula.yml $HOME/.k9s/mycluster_skin.yml
+
+cd $HOME/.k9s/
+
+kubectl api-resources
+
+kubectl describe node worker1.xtl
+
+kubectl label node worker1.xtl node=php
+
+kubectl get node -l "node=php"

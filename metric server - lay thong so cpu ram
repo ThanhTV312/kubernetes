@@ -1,0 +1,101 @@
+metric server
+
+https://github.com/kubernetes-sigs/metrics-server
+
+---
+
+kubectl top node
+
+kubectl top pod -A
+
+---
+
+#
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.7/components.yaml
+
+#
+https://github.com/kubernetes-sigs/metrics-server/releases
+
+vi components.yaml
+
+
+        args:
+          - --cert-dir=/tmp
+          - --secure-port=4443
+          - --kubelet-insecure-tls
+          - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+
+kubectl apply -f components.yaml
+
+[root@master ~]# kubectl apply -f components.yml
+error: the path "components.yml" does not exist
+[root@master ~]# kubectl apply -f components.yaml
+clusterrole.rbac.authorization.k8s.io/system:aggregated-metrics-reader created
+clusterrolebinding.rbac.authorization.k8s.io/metrics-server:system:auth-delegator created
+rolebinding.rbac.authorization.k8s.io/metrics-server-auth-reader created
+apiservice.apiregistration.k8s.io/v1beta1.metrics.k8s.io created
+serviceaccount/metrics-server created
+deployment.apps/metrics-server created
+service/metrics-server created
+clusterrole.rbac.authorization.k8s.io/system:metrics-server created
+clusterrolebinding.rbac.authorization.k8s.io/system:metrics-server create
+
+
+kubectl get pod -A
+
+kube-system            metrics-server-77775f68b8-k8bk9              1/1     Running   0          2m2s
+
+--
+kubectl top node
+
+[root@master ~]# kubectl top node
+NAME          CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+master.xtl    245m         12%    1281Mi          73%       
+worker1.xtl   60m          6%     548Mi           61%       
+worker2.xtl   60m          6%     512Mi           57%
+
+
+kubectl top pod -A
+
+[root@master ~]# kubectl top pod -A
+NAMESPACE              NAME                                         CPU(cores)   MEMORY(bytes)   
+calico-system          calico-kube-controllers-5687f44fd5-zffx2     1m           19Mi            
+calico-system          calico-node-dxf6c                            16m          60Mi            
+calico-system          calico-node-tbxxd                            20m          50Mi            
+calico-system          calico-node-zpg72                            19m          48Mi            
+calico-system          calico-typha-676cc4cc99-nss2b                1m           20Mi            
+calico-system          calico-typha-676cc4cc99-qsh22                1m           28Mi            
+calico-system          calico-typha-676cc4cc99-x2r74                2m           26Mi            
+default                deployapp-7967477b4f-6mzwp                   0m           1Mi             
+default                deployapp-7967477b4f-cg9qj                   0m           1Mi             
+default                deployapp-7967477b4f-cnqd7                   0m           1Mi             
+default                deployapp-7967477b4f-vznl2                   0m           2Mi             
+default                deployapp-7967477b4f-w4r8x                   0m           1Mi             
+default                nginx-swarmtest                              0m           17Mi            
+default                nginx-swarmtest-vol                          0m           6Mi             
+default                nginxapp                                     0m           2Mi             
+default                rsapp-cmrl2                                  0m           15Mi            
+default                static-pod                                   0m           6Mi             
+default                tools                                        1m           1Mi             
+kube-system            coredns-66bff467f8-4b5r4                     2m           10Mi            
+kube-system            coredns-66bff467f8-g82ft                     3m           13Mi            
+kube-system            etcd-master.xtl                              17m          64Mi            
+kube-system            kube-apiserver-master.xtl                    38m          460Mi           
+kube-system            kube-controller-manager-master.xtl           13m          77Mi            
+kube-system            kube-proxy-bbwdl                             1m           27Mi            
+kube-system            kube-proxy-nfmfc                             1m           17Mi            
+kube-system            kube-proxy-xjdvp                             1m           25Mi            
+kube-system            kube-scheduler-master.xtl                    3m           27Mi            
+kube-system            metrics-server-77775f68b8-k8bk9              1m           17Mi            
+kubernetes-dashboard   dashboard-metrics-scraper-6b4884c9d5-9ddmf   1m           10Mi            
+kubernetes-dashboard   kubernetes-dashboard-7b544877d5-85stt        3m           18Mi            
+tigera-operator        tigera-operator-6659cdcd96-nhdt5             1m           22Mi  
+
+
+--
+dang nhap vao dashboard
+
+https://192.168.56.102:31001/#/login
+
+
+

@@ -1,0 +1,132 @@
+mkdir /etc/kubelet.d/
+vi static-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: static-pod
+  labels:
+    app: myapp
+    ungdung: ungdung1
+spec:
+  containers:
+    - name: c1
+      image: thanhtv1203/swarm:nodejs
+      resources:
+          limits:
+            memory: "100M"
+            cpu: "100m"
+      ports:
+        - name: web
+          containerPort: 8085
+          protocol: TCP
+		  
+		  
+kubectl apply -f static-pod.yaml
+
+#check on k9s
+export KUBECONFIG=$HOME/.kube/config
+
+kubectl delete -f static-pod.yaml
+
+#on worker
+
+docker login
+thanhtv1203
+
+docker pull thanhtv1203/swarm:nodejs
+
+static-pod       1/1        Running             0      n/a      n/a       n/a       n/a 192.168.41.132        worker1.xtl        GA        4m34s 
+
+
+#pod 2
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginxapp
+  labels:
+    app:nginxapp
+spec:
+  containers:
+  - name:nginx1
+    image: nginx:1.17.6
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+      - containerPort: 80
+	  
+kubectl get pod -A
+
+---
+
+docker build -t thanhtv1203/coretool -f coretool.dockerfile .
+
+docker login
+
+docker push thanhtv1203/coretool
+
+kubectl apply -f coretool.yaml
+
+kubectl get pod -o wide
+
+kubectl delete po nginxapp
+
+kubectl delete -f nginx.yaml
+
+----
+
+kubectl edit po/nginxapp
+
+#sua file manifest
+
+vi du image khac, se cap nhap lai pod
+
+---
+
+kubectl logs pod/tools
+
+kubectl exec nginxapp ls
+
+kubectl exec -it tools bash
+
+#trong pod
+
+curl http://192.168.41.132:8085
+
+curl http://192.168.182.4:80
+
+Ctrl P Q
+
+---
+
+kubectl proxy
+Starting to serve on 127.0.0.1:8001
+
+
+kubectl get po/nginxapp -o yaml
+
+selfLink: /api/v1/namespaces/default/pods/nginxapp
+
+
+http://localhost:8001/api/v1/namespaces/default/pods/nginxapp
+
+curl http://localhost:8001/api/v1/namespaces/default/pods/nginxapp
+
+curl http://localhost:8001/api/v1/namespaces/default/pods/nginxapp/proxy/
+
+
+curl http://localhost:8001/api/v1/namespaces/default/pods/static-pod:8085/proxy/
+
+
+---
+
+
+
+
+
+
+
+
